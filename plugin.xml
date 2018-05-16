@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<plugin version="php">
+<id>os_wxapp_one</id>
+<name>微信小程序 ONE</name>
+<url>https://www.os369.com/app/item/os_wxapp_one</url>
+<note>ZBlogPHP的免费微信小程序ONE</note>
+<description>v1.180312 发布
+v1.180319 更新，过滤遗漏
+v1.180323 更新，修改报错类名，避免冲突
+v1.180424 修正一个登录验证权限问题，首页子分类过滤添加；
+v1.180425 修正文章缩略图BUG；
+</description>
+<path>main.php</path>
+<include>include.php</include>
+<level>1</level>
+<author>
+  <name>橙色阳光</name>
+  <email>1122@hizhou.cn</email>
+  <url>http://oss.so</url>
+</author>
+<source>
+  <name></name>
+  <email></email>
+  <url></url>
+</source>
+<adapted>151740</adapted>
+<version>1.3</version>
+<pubdate>2018-03-07</pubdate>
+<modified>2018-04-25</modified>
+<price>0</price>
+<phpver>5.3</phpver>
+<advanced>
+  <dependency></dependency>
+  <rewritefunctions></rewritefunctions>
+  <existsfunctions></existsfunctions>
+  <conflict></conflict>
+</advanced>
+<sidebars>
+  <sidebar1></sidebar1>
+  <sidebar2></sidebar2>
+  <sidebar3></sidebar3>
+  <sidebar4></sidebar4>
+  <sidebar5></sidebar5>
+</sidebars>
+</plugin>
