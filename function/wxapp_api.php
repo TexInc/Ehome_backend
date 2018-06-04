@@ -119,11 +119,19 @@ function os_wxapp_one_api_v1($type, $param, &$json = []) {
         case 'feedback':
             os_wxapp_one_feedback($json);
         break;
+	    case 'facereg':
+        	os_wxapp_one_facereg($json);
+        break;
+        case 'getinfo':
+        	os_wxapp_one_GetUserInfo($json);
+        break;
         case 'bind':
             os_wxapp_one_APIBind($json);
         break;
         case 'unbind':
             os_wxapp_one_APIUnBind($json);
+        case 'gettable':
+            os_wxapp_one_gettable($json);
         break;
         default:
             $json['code'] = -2;
@@ -518,6 +526,26 @@ function os_wxapp_one_APIUserInfo(&$json = []) {
 }
 
 /**
+ * 获取用户学号信息
+ */
+function os_wxapp_one_GetUserInfo(&$json = []) {
+    global $zbp;
+    $mem = os_wxapp_one_CheckSession($json);
+    if (!$mem) {
+        return false;
+    }
+  	$openid = GetVars("openid", "POST");
+  	$openid = TransferHTML($openid, '[nohtml]');
+  	
+  	$s = $zbp->db->sql->Select('eh_member', array('*'), array(array('=', 'mem_Openid', $openid)), null, null, null);
+  	$array = $zbp->db->Query($s);
+    $json['code'] = 100000;
+    $json['result'] = $array;
+
+    return true;
+}
+
+/**
  * 绑定网站用户
  */
 function os_wxapp_one_APIBind(&$json = []) {
@@ -570,23 +598,54 @@ function os_wxapp_one_reg(&$json = []) {
     global $zbp;
     // 获取传入数据
   	$mem = os_wxapp_one_CheckSession($json);
-  	if (!$mem) {
-      	$json['code'] = 2004001;
-        $json['message'] = "你没有登录";
+    if (!$mem) {
         return false;
     }
-    $name = GetVars("name", "GET");
-  	$gender = GetVars("gender", "GET");
-    $department = GetVars('department', 'GET');
-    $major = GetVars('major', 'GET');
-    $class = GetVars('class', 'GET');
-    $dormitory = GetVars('dormitory', 'GET');
-    $room = GetVars('room', 'GET');
-  	$qqnumber = GetVars("qqnumber", "GET");
-    $phonenumber = GetVars('phonenumber', 'GET');
+  	$openid = GetVars("openid", "POST");
+    $name = GetVars("name", "POST");
+    $stu_id = GetVars('stu_id', "POST");
+  	$gender = GetVars("gender", "POST");
+    $department = GetVars('department', 'POST');
+    $major = GetVars('major', 'POST');
+    $class = GetVars('class', 'POST');
+    $dormitory = GetVars('dormitory', 'POST');
+    $room = GetVars('room', 'POST');
+  	$qqnumber = GetVars("qqnumber", "POST");
+    $phonenumber = GetVars('phonenumber', 'POST');
+  
+  	$openid = TransferHTML($openid, '[nohtml]');
+  	$name = TransferHTML($name, '[nohtml]');
+    $stu_id = TransferHTML($stu_id, '[nohtml]');
+    $gender = TransferHTML($gender, '[nohtml]');
+  	$department = TransferHTML($department, '[nohtml]');
+    $major = TransferHTML($major, '[nohtml]');
+    $class = TransferHTML($class, '[nohtml]');
+    $dormitory = TransferHTML($dormitory, '[nohtml]');
+    $room = TransferHTML($room, '[nohtml]');
+    $qqnumber = TransferHTML($qqnumber, '[nohtml]');
+  	$phonenumber = TransferHTML($phonenumber, '[nohtml]');
+  	if (empty($openid)) {
+        $json['code'] = 2004001;
+        $json['message'] = "没有获取到openid";
+        return false;
+    }
+  	$s = $zbp->db->sql->Select('eh_member', array('mem_ID'), array(array('=', 'mem_Openid', $openid)), null, null, null);
+  	$array = $zbp->db->Query($s);
+  	if (empty($array)) {
+        $json['code'] = 2004020;
+        $json['message'] = "已经录入过信息";
+        return false;
+    }
+  
     if (empty($name)) {
+      	$json['openid'] = $openid;
         $json['code'] = 2004001;
         $json['message'] = "姓名不能为空";
+        return false;
+    }
+  	if (empty($stu_id)) {
+        $json['code'] = 200410;
+        $json['message'] = "学号不能为空";
         return false;
     }
   	if (empty($name)) {
@@ -658,13 +717,19 @@ function os_wxapp_one_reg(&$json = []) {
 
     $member->Phonenumber = $phonenumber;
 
-
     $member->Password = $phonenumber;
 
 
     $member->Save();
 
-
+	$keyvalue['mem_Studentid'] = $stu_id;
+	$sql = $zbp->db->sql->Update('eh_member', $keyvalue, array(array('=', 'mem_Name', $name)));
+    $zbp->db->Update($sql);
+  
+  	$keyvalue['mem_Openid'] = $openid;
+	$sql = $zbp->db->sql->Update('eh_member', $keyvalue, array(array('=', 'mem_Name', $name)));
+    $zbp->db->Update($sql);
+  
     $result = (Object) array();
     $json['message'] = "恭喜你提交成功";
     $json['code'] = 100000;
@@ -683,12 +748,12 @@ function os_wxapp_one_feedback(&$json = []) {
     $contact = GetVars("contact", "GET");
     if (empty($content)) {
         $json['code'] = 2004001;
-        $json['message'] = "反馈内容不能为空";
+        $json['message'] = "内容不能为空";
         return false;
     }
     if (empty($contact)) {
         $json['code'] = 200402;
-        $json['message'] = "联系方式不能为空";
+        $json['message'] = "没有联系方式";
         $json['param'] = $content;
         return false;
     }
@@ -700,7 +765,7 @@ function os_wxapp_one_feedback(&$json = []) {
     $result = (Object) array();
   	$result->content = $content;
     $result->contact = $contact;
-    $json['message'] = "恭喜你提交成功";
+    $json['message'] = "恭喜提交成功";
     $json['code'] = 100000;
     $json['result'] = $result;
     return true;
@@ -711,6 +776,58 @@ function os_wxapp_one_feedback(&$json = []) {
  * 用户提交维修
  */
 function os_wxapp_one_repair(&$json = []) {
+    global $zbp;
+    // 获取传入数据
+    $dormitory = GetVars("dormitory", "GET");
+    $room = GetVars("room", "GET");
+    $content = GetVars("content", "GET");
+    $contact = GetVars("contact", "GET");
+    if (empty($dormitory)) {
+        $json['code'] = 2004001;
+        $json['message'] = "楼栋号为空";
+        $json['param'] = $dormitory;
+        return false;
+    }
+    if (empty($room)) {
+        $json['code'] = 200402;
+        $json['message'] = "寝室号为空";
+        $json['param'] = $room;
+        return false;
+    }
+    if (empty($content)) {
+        $json['code'] = 200403;
+        $json['message'] = "报修内容为空";
+        $json['param'] = $content;
+        return false;
+    }
+    if (empty($contact)) {
+        $json['code'] = 200404;
+        $json['message'] = "联系方式为空";
+        $json['param'] = $contact;
+        return false;
+    }
+    $keyvalue['rpr_Dormitory'] = $dormitory;
+    $keyvalue['rpr_Room'] = $room;
+    $keyvalue['rpr_Content'] = $content;
+    $keyvalue['rpr_Contact'] = $contact;
+    $sql = $zbp->db->sql->Insert('eh_wxapp_repair', $keyvalue);
+    $zbp->db->Insert($sql);
+
+    $result = (Object) array();
+    $result->dormitory = $dormitory;
+    $result->room = $room;
+    $result->content = $content;
+    $result->contact = $contact;
+    $json['message'] = "恭喜提交成功";
+    $json['code'] = 100000;
+    $json['result'] = $result;
+    return true;
+}
+
+/**
+ * 用户提交人脸信息
+ */
+function os_wxapp_one_facereg(&$json = []) {
     global $zbp;
     // 获取传入数据
     $dormitory = GetVars("dormitory", "GET");
@@ -758,3 +875,60 @@ function os_wxapp_one_repair(&$json = []) {
     $json['result'] = $result;
     return true;
 }
+
+
+/**
+ * 用户查询课表
+ */
+function os_wxapp_one_gettable(&$json = []) {
+    global $zbp;
+    // 获取传入数据
+    $stu_id = GetVars("stu_id", "GET");
+    $stu_password = GetVars("stu_password", "GET");
+    if (empty($stu_id)) {
+        $json['code'] = 2004001;
+        $json['message'] = "学号不能为空";
+        return false;
+    }
+    if (empty($stu_password)) {
+        $json['code'] = 2004001;
+        $json['message'] = "密码不能为空";
+        return false;
+    }
+  	$keyvalue['mem_Studentid'] = $stu_id;
+    $keyvalue['mem_Stupasswd'] = $stu_password;
+	$sql = $zbp->db->sql->Update('eh_member', $keyvalue, array(array('=', 'mem_Studentid', $stu_id)));
+    $zbp->db->Update($sql);
+
+    $result = (Object) array();
+    $result->stu_id = $stu_id;
+    $json['message'] = "恭喜你提交成功";
+    $json['code'] = 100000;
+    $json['result'] = $result;
+    return true;
+}
+
+
+
+/**
+ * 发送post请求
+ * @param string $url 请求地址
+ * @param array $post_data post键值对数据
+ * @return string
+ */
+function send_post($url, $post_data){
+    $postdata = http_build_query($post_data);
+    $options = array(
+        'http' => array(
+            'method' => 'POST',
+            'header' => 'Content-type:application/x-www-form-urlencoded',
+            'content' => $postdata,
+            'timeout' => 15 * 60 // 超时时间（单位:s）
+        )
+    );
+    $context = stream_context_create($options);
+    $result = file_get_contents($url, false, $context);
+    return $result;
+}
+
+

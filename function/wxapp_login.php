@@ -18,6 +18,8 @@ function os_wxapp_one_CheckSession(&$json = []) {
     $wxSession = new WXAppOneSession;
     $wxSession->LoadInfoByToken($sessionid);
     if ($wxSession->ID == 0) {
+        $json['session'] = $sessionid;
+      	$json['wxSession->ID'] = $wxSession->ID;
         $json['code'] = 200000;
         $json['message'] = "登录验证失败";
         return false;
@@ -116,7 +118,7 @@ function os_wxapp_one_Login(&$json = []) {
             "Avatar"   => $u->Avatar,
         );
     }
-
+	$json['data'] = $data;
     $json['code'] = 100000;
     $json['result'] = $result;
     return true;
