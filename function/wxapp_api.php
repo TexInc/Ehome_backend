@@ -130,8 +130,12 @@ function os_wxapp_one_api_v1($type, $param, &$json = []) {
         break;
         case 'unbind':
             os_wxapp_one_APIUnBind($json);
+        break;
         case 'gettable':
             os_wxapp_one_gettable($json);
+        break;
+        case 'getgrade':
+            os_wxapp_one_getgrade($json);
         break;
         default:
             $json['code'] = -2;
@@ -631,7 +635,7 @@ function os_wxapp_one_reg(&$json = []) {
     }
   	$s = $zbp->db->sql->Select('eh_member', array('mem_ID'), array(array('=', 'mem_Openid', $openid)), null, null, null);
   	$array = $zbp->db->Query($s);
-  	if (empty($array)) {
+  	if (!empty($array)) {
         $json['code'] = 2004020;
         $json['message'] = "已经录入过信息";
         return false;
@@ -696,6 +700,7 @@ function os_wxapp_one_reg(&$json = []) {
 
     if ($zbp->GetMemberByName($name)->ID > 0) {
         $json['code'] = 200411;
+      	$json['user_id'] = $zbp->GetMemberByName($name)->ID;
         $json['message'] = "用户名已存在";
         return false;
     }
@@ -883,9 +888,9 @@ function os_wxapp_one_facereg(&$json = []) {
 function os_wxapp_one_gettable(&$json = []) {
     global $zbp;
     // 获取传入数据
-    $stu_id = GetVars("stu_id", "GET");
+  	$stu_id = GetVars("stu_id", "GET");
     $stu_password = GetVars("stu_password", "GET");
-    if (empty($stu_id)) {
+  	if (empty($stu_id)) {
         $json['code'] = 2004001;
         $json['message'] = "学号不能为空";
         return false;
@@ -899,15 +904,46 @@ function os_wxapp_one_gettable(&$json = []) {
     $keyvalue['mem_Stupasswd'] = $stu_password;
 	$sql = $zbp->db->sql->Update('eh_member', $keyvalue, array(array('=', 'mem_Studentid', $stu_id)));
     $zbp->db->Update($sql);
-
-    $result = (Object) array();
-    $result->stu_id = $stu_id;
+  	$url="http://139.199.163.93:5000/stu/api/v1.0/tables";
+    $params=array('student_id'=>$stu_id, 'password'=>$stu_password);
+  	$result=do_get($url,$params);
+  	$json['result'] = json_decode($result);
     $json['message'] = "恭喜你提交成功";
     $json['code'] = 100000;
-    $json['result'] = $result;
     return true;
 }
 
+
+/**
+ * 用户查询课表
+ */
+function os_wxapp_one_getgrade(&$json = []) {
+    global $zbp;
+    // 获取传入数据
+  	$stu_id = GetVars("stu_id", "GET");
+    $stu_password = GetVars("stu_password", "GET");
+  	if (empty($stu_id)) {
+        $json['code'] = 2004001;
+        $json['message'] = "学号不能为空";
+        return false;
+    }
+    if (empty($stu_password)) {
+        $json['code'] = 2004001;
+        $json['message'] = "密码不能为空";
+        return false;
+    }
+  	$keyvalue['mem_Studentid'] = $stu_id;
+    $keyvalue['mem_Stupasswd'] = $stu_password;
+	$sql = $zbp->db->sql->Update('eh_member', $keyvalue, array(array('=', 'mem_Studentid', $stu_id)));
+    $zbp->db->Update($sql);
+  	$url="http://139.199.163.93:5000/stu/api/v1.0/grade";
+    $params=array('student_id'=>$stu_id, 'password'=>$stu_password);
+  	$result=do_get($url,$params);
+  	$json['result'] = json_decode($result);
+    $json['message'] = "恭喜你提交成功";
+    $json['code'] = 100000;
+    return true;
+}
 
 
 /**
@@ -928,6 +964,21 @@ function send_post($url, $post_data){
     );
     $context = stream_context_create($options);
     $result = file_get_contents($url, false, $context);
+    return $result;
+}
+
+
+
+
+function do_get($url, $params) {        
+  	$url = "{$url}?".http_build_query ( $params );        
+  	$ch = curl_init ();
+    curl_setopt ( $ch, CURLOPT_URL, $url );
+    curl_setopt ( $ch, CURLOPT_RETURNTRANSFER, 1 );
+    curl_setopt ( $ch, CURLOPT_CUSTOMREQUEST, 'GET' );
+    curl_setopt ( $ch, CURLOPT_TIMEOUT, 60 );
+    curl_setopt ( $ch, CURLOPT_POSTFIELDS, $params );        $result = curl_exec ( $ch );
+    curl_close ( $ch );        
     return $result;
 }
 
