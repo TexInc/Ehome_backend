@@ -969,7 +969,12 @@ function send_post($url, $post_data){
 
 
 
-
+/**
+ * 发送get请求
+ * @param string $url 请求地址
+ * @param array $params get键值对数据
+ * @return string
+ */
 function do_get($url, $params) {        
   	$url = "{$url}?".http_build_query ( $params );        
   	$ch = curl_init ();
@@ -978,6 +983,27 @@ function do_get($url, $params) {
     curl_setopt ( $ch, CURLOPT_CUSTOMREQUEST, 'GET' );
     curl_setopt ( $ch, CURLOPT_TIMEOUT, 60 );
     curl_setopt ( $ch, CURLOPT_POSTFIELDS, $params );        $result = curl_exec ( $ch );
+    curl_close ( $ch );        
+    return $result;
+}
+
+
+/**
+ * 发送post请求
+ * @param string $url 请求地址
+ * @param array $params post键值对数据
+ * @param array $headers post键值对数据
+ * @return string
+ */
+function do_post($url, $params, $headers) {
+    $ch = curl_init ();
+    curl_setopt ( $ch, CURLOPT_URL, $url );
+    curl_setopt ( $ch, CURLOPT_RETURNTRANSFER, 1 );
+    curl_setopt ( $ch, CURLOPT_CUSTOMREQUEST, 'POST' );
+    curl_setopt ( $ch, CURLOPT_POSTFIELDS, $params );
+    curl_setopt ( $ch, CURLOPT_HTTPHEADER, $headers );
+    curl_setopt ( $ch, CURLOPT_TIMEOUT, 60 );        
+    $result = curl_exec ( $ch );
     curl_close ( $ch );        
     return $result;
 }
